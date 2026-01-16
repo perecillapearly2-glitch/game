@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Guess Whose Style</title>
+  <style>
+    :root{
+      --bg:#070814;
+      --card:#0f1226;
+      --text:#f4f6ff;
+      --muted:#aab1d6;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --ring:rgba(255,255,255,.12);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;
+      background: radial-gradient(circle at 20% 0%, #1a1f4d, var(--bg) 60%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      gap:16px;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .pill{
+      padding:10px 14px;
+      border:1px solid var(--ring);
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-weight:600;
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .card{
+      border:1px solid var(--ring);
+      border-radius:var(--radius);
+      background:rgba(255,255,255,.04);
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .prompt{
+      padding:14px;
+      display:grid;
+      gap:10px;
+    }
+    .prompt h1{
+      margin:0;
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .prompt p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .imgWrap{
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--ring);
+      background:#0b0f22;
+      aspect-ratio: 16 / 9;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .imgWrap img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .choices{
+      padding:14px;
+      display:grid;
+      gap:12px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:12px;
+    }
+    @media (min-width: 800px){
+      .grid{ grid-template-columns:repeat(4, 1fr); }
+    }
+
+    button.choice{
+      appearance:none;
+      border:none;
+      background:transparent;
+      padding:0;
+      cursor:pointer;
+      text-align:left;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--ring);
+      transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+      outline:none;
+    }
+    button.choice:focus-visible{
+      box-shadow:0 0 0 4px rgba(99,102,241,.35);
+    }
+    button.choice:hover{ transform:translateY(-2px); }
+    .choice .thumb{
+      aspect-ratio: 1 / 1;
+      background:#0b0f22;
+    }
+    .choice img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .choice .label{
+      padding:10px 10px 12px;
+      font-size:13px;
+      font-weight:700;
+      color:var(--muted);
+      background:rgba(0,0,0,.18);
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+
+    .feedback{
+      padding:12px 14px;
+      border-top:1px solid rgba(255,255,255,.07);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:52px;
+    }
+    .msg{
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .msg.good{ color:var(--good); }
+    .msg.bad{ color:var(--bad); }
+    .muted{ color:var(--muted); font-weight:600; }
+    .actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .btn{
+      border:1px solid var(--ring);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:14px;
+    }
+    .btn:hover{ background:rgba(255,255,255,.10); }
+
+    .disabled{ opacity:.55; cursor:not-allowed; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="pill" id="roundPill">Round 1 / 20</div>
+      <div class="pill" id="scorePill">Score: 0</div>
+    </div>
+
+    <div class="card">
+      <div class="prompt">
+        <h1>Guess whose style this is</h1>
+        <p>Tap one of the 4 photos below that matches the person/style.</p>
+
+        <div class="imgWrap">
+          <img id="promptImg" alt="Style prompt"/>
+        </div>
+      </div>
+
+      <div class="choices">
+        <div class="grid" id="choicesGrid"></div>
+      </div>
+
+      <div class="feedback">
+        <div>
+          <div class="msg" id="msg"></div>
+          <div class="muted" id="submsg"></div>
+        </div>
+        <div class="actions">
+          <button class="btn hidden" id="nextBtn">Next</button>
+          <button class="btn" id="restartBtn">Restart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /***********************
+     * 1) PUT YOUR DATA HERE
+     ***********************/
+    const QUESTIONS = [
+      {
+        // The photo you show at the top (the "style to guess")
+        promptImage: "https://images.unsplash.com/photo-1520975661595-6453be3f7070?auto=format&fit=crop&w=1600&q=60",
+        // 4 photo options (could be outfit pics, faces, icons, whatever you want)
+        options: [
+          { id: "A", label: "Option A", image: "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=800&q=60" },
+          { id: "B", label: "Option B", image: "https://images.unsplash.com/photo-1520975869011-3a2c0d5b2f16?auto=format&fit=crop&w=800&q=60" },
+          { id: "C", label: "Option C", image: "https://images.unsplash.com/photo-1520975745485-484a0abf0b5e?auto=format&fit=crop&w=800&q=60" },
+          { id: "D", label: "Option D", image: "https://images.unsplash.com/photo-1520975791715-25c87b7f0d94?auto=format&fit=crop&w=800&q=60" }
+        ],
+        correctId: "B"
+      },
+
+      // Add more questions the same way (you want ~20)
+      // { promptImage: "...", options:[...4], correctId:"A" },
+    ];
+
+    /***********************
+     * 2) GAME LOGIC
+     ***********************/
+    const TOTAL_ROUNDS = 20; // change to 20 once you have 20 questions
+    let order = [];
+    let index = 0;
+    let score = 0;
+    let locked = false;
+
+    const promptImg = document.getElementById("promptImg");
+    const choicesGrid = document.getElementById("choicesGrid");
+    const msg = document.getElementById("msg");
+    const submsg = document.getElementById("submsg");
+    const nextBtn = document.getElementById("nextBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const roundPill = document.getElementById("roundPill");
+    const scorePill = document.getElementById("scorePill");
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    function startGame(){
+      // If you have fewer than TOTAL_ROUNDS questions, we only play what exists.
+      const maxRounds = Math.min(TOTAL_ROUNDS, QUESTIONS.length);
+      order = shuffle([...Array(maxRounds).keys()]);
+      index = 0;
+      score = 0;
+      locked = false;
+      nextBtn.classList.add("hidden");
+      msg.textContent = "";
+      submsg.textContent = "";
+      render();
+    }
+
+    function render(){
+      const q = QUESTIONS[order[index]];
+      promptImg.src = q.promptImage;
+      promptImg.onload = () => {}; // no-op
+
+      // Update top UI
+      roundPill.textContent = `Round ${index+1} / ${order.length}`;
+      scorePill.textContent = `Score: ${score}`;
+
+      // Render 4 photo options (we can shuffle options per round if you want)
+      choicesGrid.innerHTML = "";
+      const opts = shuffle(q.options);
+
+      opts.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.type = "button";
+        btn.setAttribute("aria-label", opt.label);
+
+        btn.innerHTML = `
+          <div class="thumb"><img alt="${opt.label}" src="${opt.image}"></div>
+          <div class="label">${opt.label}</div>
+        `;
+
+        btn.addEventListener("click", () => choose(opt.id, opt.label));
+        choicesGrid.appendChild(btn);
+      });
+
+      locked = false;
+      nextBtn.classList.add("hidden");
+      msg.textContent = "";
+      submsg.textContent = "";
+    }
+
+    function choose(id, label){
+      if (locked) return;
+      locked = true;
+
+      const q = QUESTIONS[order[index]];
+      const correct = (id === q.correctId);
+
+      if (correct){
+        score += 1;
+        msg.textContent = "Correct!";
+        msg.className = "msg good";
+        submsg.textContent = `+1 point`;
+      } else {
+        msg.textContent = "Not quite";
+        msg.className = "msg bad";
+        submsg.textContent = `Correct answer was: ${q.options.find(o => o.id === q.correctId)?.label ?? "the right one"}`;
+      }
+
+      scorePill.textContent = `Score: ${score}`;
+
+      // End or next
+      if (index >= order.length - 1){
+        nextBtn.textContent = "See Results";
+      } else {
+        nextBtn.textContent = "Next";
+      }
+      nextBtn.classList.remove("hidden");
+    }
+
+    function next(){
+      if (index >= order.length - 1){
+        // Results screen
+        msg.textContent = `Done! Final score: ${score} / ${order.length}`;
+        msg.className = "msg";
+        submsg.textContent = "Hit Restart to play again.";
+        nextBtn.classList.add("hidden");
+        locked = true;
+        return;
+      }
+      index += 1;
+      render();
+    }
+
+    nextBtn.addEventListener("click", next);
+    restartBtn.addEventListener("click", startGame);
+
+    // Start
+    startGame();
+  </script>
+</body>
+</html>
